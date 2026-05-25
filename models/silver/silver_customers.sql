@@ -41,7 +41,5 @@ select
     _ingested_at                                                         as updated_at,
 
     not {{ is_valid_email('lower(trim(email))') }}                       as is_email_invalid,
-    ({{ clean_phone_number('mobile') }}) is null                         as is_mobile_invalid,
-    date_of_birth > current_date()                                       as is_dob_in_future,
-    signup_date   < date_of_birth                                        as is_signup_before_dob
+    (mobile is null or trim(mobile) = '')                                as missing_phone_number_flag
 from latest

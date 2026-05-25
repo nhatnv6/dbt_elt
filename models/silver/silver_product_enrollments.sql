@@ -29,8 +29,5 @@ select
     initcap(trim(product_type))             as product_type,
     enrollment_date,
     `limit`                                 as credit_limit,
-    _ingested_at                            as updated_at,
-
-    (initcap(trim(product_type)) = 'Credit Card' and `limit` <= 0)
-                                            as is_credit_card_zero_limit
+    _ingested_at                            as updated_at
 from latest

@@ -4,7 +4,12 @@ with txn as (
     select * from {{ ref('silver_transactions') }}
     where not is_transaction_in_future
 ),
-as_of as (select {{ reporting_as_of_date() }} as as_of_date)
+
+latest_balance as (
+    select customer_id, closing_balance as current_balance
+    from txn
+    qualify row_number() over (partition by customer_id order by transaction_ts desc) = 1
+)
 
 select
     t.customer_id,
@@ -18,14 +23,21 @@ select
                                                                           as total_outflow,
     avg(t.transaction_abs_amount)                                         as avg_transaction_value,
     max(t.transaction_abs_amount)                                         as max_transaction_value,
+
+    -- balance
+    max(lb.current_balance)                                               as current_balance,
+    avg(t.closing_balance)                                                as avg_balance,
+    min(t.closing_balance)                                                as min_balance,
+    max(t.closing_balance)                                                as max_balance,
+
     min(t.transaction_date)                                               as first_transaction_date,
     max(t.transaction_date)                                               as last_transaction_date,
-    datediff(a.as_of_date, max(t.transaction_date))                       as days_since_last_transaction,
-    count_if(t.transaction_date >= date_sub(a.as_of_date, {{ var('active_customer_window_days') }}))
+    datediff({{ report_date() }}, max(t.transaction_date))                     as days_since_last_transaction,
+    count_if(t.transaction_date >= date_sub({{ report_date() }}, {{ var('active_customer_window_days') }}))
                                                                           as txns_last_90d,
     sum(case
-            when t.transaction_date >= date_sub(a.as_of_date, {{ var('active_customer_window_days') }})
+            when t.transaction_date >= date_sub({{ report_date() }}, {{ var('active_customer_window_days') }})
             then t.transaction_abs_amount else 0 end)                     as txn_value_last_90d
 from txn t
-cross join as_of a
-group by t.customer_id, a.as_of_date
+left join latest_balance lb on lb.customer_id = t.customer_id
+group by t.customer_id

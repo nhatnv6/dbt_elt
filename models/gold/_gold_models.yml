@@ -31,7 +31,7 @@ models:
     columns:
       - name: customer_id
         tests: [not_null, unique]
-      - name: as_of_date
+      - name: report_date
         tests: [not_null]
       - name: gender
         tests:
@@ -52,19 +52,19 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Never Engaged', 'Active', 'At Risk', 'Dormant', 'Churned']
+              values: ['Active', 'At Risk', 'Hibernate', 'Churned']
       - name: customer_segment
         description: Marketing segment; partitions the table.
         tests:
           - not_null
           - accepted_values:
               values:
-                - VIP
-                - Premium
+                - Priority Customer
+                - Private Customer
                 - Mainstream Credit
                 - Mainstream Saver
                 - At Risk
-                - Dormant
+                - Hibernate
                 - Churned
                 - Prospect
                 - Other

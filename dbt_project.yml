@@ -19,9 +19,13 @@ clean-targets:
 
 vars:
   active_customer_window_days: 90
-  dormant_window_days: 180
+  hibernate_window_days: 180
   churn_window_days: 365
-  reporting_as_of_date: "2025-07-01"
+
+  # Reporting anchor date for all recency metrics in gold.
+  # Override via:  dbt build --vars '{report_date: "2025-07-01"}'
+  # If null/unset, the report_date() macro falls back to current_date().
+  report_date: "2025-07-01"
 
   # Optional watermark overrides for bronze incremental loads.
   # Each var corresponds to one bronze table's watermark column.

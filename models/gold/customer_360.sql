@@ -15,12 +15,11 @@ with
     products as (select * from {{ ref('int_customer_products') }}),
     txn     as (select * from {{ ref('int_customer_transactions') }}),
     ix      as (select * from {{ ref('int_customer_interactions') }}),
-    as_of   as (select {{ reporting_as_of_date() }} as as_of_date),
 
 joined as (
     select
         c.customer_id,
-        a.as_of_date,
+        {{ report_date() }}                                                        as report_date,
 
         -- identity
         c.first_name,
@@ -30,12 +29,12 @@ joined as (
         c.mobile_e164                                                            as mobile,
         c.gender,
         c.date_of_birth,
-        cast(floor(months_between(a.as_of_date, c.date_of_birth) / 12) as int)   as age_years,
+        cast(floor(months_between({{ report_date() }}, c.date_of_birth) / 12) as int) as age_years,
 
         -- tenure
         c.signup_date,
-        datediff(a.as_of_date, c.signup_date)                                    as tenure_days,
-        cast(datediff(a.as_of_date, c.signup_date) / 365.25 as decimal(6, 2))    as tenure_years,
+        datediff({{ report_date() }}, c.signup_date)                                  as tenure_days,
+        cast(datediff({{ report_date() }}, c.signup_date) / 365.25 as decimal(6, 2))  as tenure_years,
 
         -- products
         coalesce(p.total_products,        0)        as total_products,
@@ -65,6 +64,12 @@ joined as (
         coalesce(t.txns_last_90d,             0)    as txns_last_90d,
         coalesce(t.txn_value_last_90d,        0.0)  as txn_value_last_90d,
 
+        -- balance
+        t.current_balance,
+        t.avg_balance,
+        t.min_balance,
+        t.max_balance,
+
         -- crm
         coalesce(i.total_interactions,        0)    as total_interactions,
         coalesce(i.email_interactions,        0)    as email_interactions,
@@ -77,11 +82,8 @@ joined as (
 
         -- dq passthrough
         c.is_email_invalid,
-        c.is_mobile_invalid,
-        c.is_dob_in_future,
-        c.is_signup_before_dob
+        c.missing_phone_number_flag
     from cust c
-    cross join as_of a
     left join products p on p.customer_id = c.customer_id
     left join txn      t on t.customer_id = c.customer_id
     left join ix       i on i.customer_id = c.customer_id
@@ -108,7 +110,6 @@ enriched as (
         ) <= {{ var('active_customer_window_days') }}                            as is_active_customer,
 
         case
-            when total_transactions = 0 and total_interactions = 0 then 'Never Engaged'
             when least(
                 coalesce(days_since_last_transaction, 99999),
                 coalesce(days_since_last_interaction, 99999)
@@ -116,11 +117,11 @@ enriched as (
             when least(
                 coalesce(days_since_last_transaction, 99999),
                 coalesce(days_since_last_interaction, 99999)
-            ) <= {{ var('dormant_window_days') }}        then 'At Risk'
+            ) <= {{ var('hibernate_window_days') }}      then 'At Risk'
             when least(
                 coalesce(days_since_last_transaction, 99999),
                 coalesce(days_since_last_interaction, 99999)
-            ) <= {{ var('churn_window_days') }}          then 'Dormant'
+            ) <= {{ var('churn_window_days') }}          then 'Hibernate'
             else 'Churned'
         end                                                                      as lifecycle_stage,
 
@@ -148,14 +149,14 @@ select
         as rfm_total_score,
 
     case
-        when not is_active_customer and lifecycle_stage = 'Churned'  then 'Churned'
-        when not is_active_customer and lifecycle_stage = 'Dormant'  then 'Dormant'
-        when not is_active_customer and lifecycle_stage = 'At Risk'  then 'At Risk'
-        when total_credit_limit >= 100000 and is_active_customer     then 'VIP'
-        when is_multi_product   and is_active_customer               then 'Premium'
-        when has_credit_card    and is_active_customer               then 'Mainstream Credit'
-        when has_savings        and is_active_customer               then 'Mainstream Saver'
-        when total_products = 0                                      then 'Prospect'
+        when not is_active_customer and lifecycle_stage = 'Churned'   then 'Churned'
+        when not is_active_customer and lifecycle_stage = 'Hibernate' then 'Hibernate'
+        when not is_active_customer and lifecycle_stage = 'At Risk'   then 'At Risk'
+        when total_transaction_value >= 100000 and is_active_customer then 'Private Customer'
+        when total_transaction_value >= 50000  and is_active_customer then 'Priority Customer'
+        when has_credit_card and is_active_customer                   then 'Mainstream Credit'
+        when has_savings     and is_active_customer                   then 'Mainstream Saver'
+        when total_products = 0                                       then 'Prospect'
         else 'Other'
     end                                                                          as customer_segment,
 

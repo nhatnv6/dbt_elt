@@ -15,9 +15,7 @@ models:
       - name: signup_date
       - name: updated_at
       - name: is_email_invalid
-      - name: is_mobile_invalid
-      - name: is_dob_in_future
-      - name: is_signup_before_dob
+      - name: missing_phone_number_flag
 
   - name: silver_product_enrollments
     description: Cleansed product enrollments, current state per product_id.
@@ -36,7 +34,6 @@ models:
           - accepted_values: { values: ['Savings', 'Credit Card'] }
       - name: enrollment_date
       - name: credit_limit
-      - name: is_credit_card_zero_limit
 
   - name: silver_crm_interactions
     description: Cleansed CRM interactions.
