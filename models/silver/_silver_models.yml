@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: silver_customers
+    description: Cleansed customer master, current state per customer_id.
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: email
+      - name: mobile_e164
+      - name: gender
+        tests:
+          - accepted_values: { values: ['Male', 'Female', 'Unknown'] }
+      - name: date_of_birth
+      - name: signup_date
+      - name: updated_at
+      - name: is_email_invalid
+      - name: is_mobile_invalid
+      - name: is_dob_in_future
+      - name: is_signup_before_dob
+
+  - name: silver_product_enrollments
+    description: Cleansed product enrollments, current state per product_id.
+    columns:
+      - name: product_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_customers')
+              field: customer_id
+      - name: product_type
+        tests:
+          - not_null
+          - accepted_values: { values: ['Savings', 'Credit Card'] }
+      - name: enrollment_date
+      - name: credit_limit
+      - name: is_credit_card_zero_limit
+
+  - name: silver_crm_interactions
+    description: Cleansed CRM interactions.
+    columns:
+      - name: interaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_customers')
+              field: customer_id
+      - name: interaction_type
+        tests:
+          - accepted_values: { values: ['Email', 'Chat', 'Call'] }
+      - name: interaction_date
+
+  - name: silver_transactions
+    description: Cleansed transactions with direction and absolute amount.
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_customers')
+              field: customer_id
+      - name: product_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_product_enrollments')
+              field: product_id
+      - name: transaction_amount
+      - name: transaction_direction
+        tests:
+          - accepted_values: { values: ['Credit', 'Debit'] }

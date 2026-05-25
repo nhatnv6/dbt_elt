@@ -1,0 +1,101 @@
+name: 'bank_customer_360'
+version: '1.0.0'
+config-version: 2
+
+profile: 'bank_customer_360'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]                # dbt default location for seed CSVs
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
+docs-paths: ["docs"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  active_customer_window_days: 90
+  dormant_window_days: 180
+  churn_window_days: 365
+  reporting_as_of_date: "2025-07-01"
+
+  # Optional watermark overrides for bronze incremental loads.
+  # Each var corresponds to one bronze table's watermark column.
+  # When set, the model reads source rows with <watermark_col> >= <var>.
+  # When unset, it falls back to MAX(<watermark_col>) FROM the bronze table.
+  # Pass via CLI:           dbt run --vars '{backfill_transaction_date: "2025-04-01"}'
+  # Pass from Workflow:     set under the dbt task "dbt vars" block.
+  backfill_transaction_date: null   # bronze_transactions     -> transaction_date
+  backfill_interaction_date: null   # bronze_crm_interactions -> interaction_date
+  backfill_enrollment_date:  null   # bronze_product_enrollments -> enrollment_date
+
+seeds:
+  bank_customer_360:
+    +schema: raw                     # raw landing zone for the source extracts
+    +quote_columns: false
+    +file_format: delta
+    +delimiter: "|"                  # source CSVs are pipe-separated
+    customer_raw:
+      +column_types:
+        customer_id: bigint
+        first_name: string
+        last_name: string
+        email: string
+        mobile: string
+        gender: string
+        date_of_birth: date
+        signup_date: date
+    product_enrollments:
+      +column_types:
+        product_id: bigint
+        customer_id: bigint
+        product_type: string
+        enrollment_date: date
+        limit: double
+    crm_interactions:
+      +column_types:
+        interaction_id: bigint
+        customer_id: bigint
+        interaction_type: string
+        interaction_date: date
+    transaction_history:
+      +column_types:
+        product_id: bigint
+        customer_id: bigint
+        transaction_amount: double
+        closing_balance: double
+        transaction_date: timestamp
+        transaction_id: bigint
+
+# Medallion architecture
+#   bronze : sources  -> raw  (durable typed landings of the source data)
+#   silver : raw      -> cleansed, deduped, conformed; DQ-flagged
+#   gold   : silver   -> business-ready aggregates / customer_360
+models:
+  bank_customer_360:
+    bronze:
+      +materialized: incremental
+      +file_format: delta
+      +incremental_strategy: append      # append-only; bronze preserves full history
+      +on_schema_change: append_new_columns
+      +schema: bronze
+    silver:
+      +materialized: incremental
+      +file_format: delta
+      +incremental_strategy: merge
+      +on_schema_change: append_new_columns
+      +schema: silver
+    gold:
+      +materialized: table
+      +file_format: delta
+      +schema: gold
+      customer_360:
+        +materialized: table
+        +partition_by: ['customer_segment']
+        +tblproperties:
+          delta.autoOptimize.optimizeWrite: 'true'
+          delta.autoOptimize.autoCompact: 'true'

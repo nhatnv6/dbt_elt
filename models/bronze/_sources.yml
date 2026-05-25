@@ -1,0 +1,58 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw landing zone for source-system extracts. In dev these are loaded
+      by `dbt seed` from `seeds/`; in prod they are populated by
+      upstream ingestion (Auto Loader / Fivetran) into the
+      `bank_<env>.<schema>_raw` schema.
+    database: "{{ target.catalog if target.type == 'databricks' else target.database }}"
+    schema: "{{ target.schema ~ '_raw' }}"
+    tables:
+      - name: customer_raw
+        description: Master customer records from the core CRM.
+        columns:
+          - name: customer_id
+            tests: [not_null]
+          - name: first_name
+          - name: last_name
+          - name: email
+          - name: mobile
+          - name: gender
+          - name: date_of_birth
+          - name: signup_date
+
+      - name: product_enrollments
+        description: One row per product a customer has been enrolled into.
+        columns:
+          - name: product_id
+            tests: [not_null]
+          - name: customer_id
+            tests: [not_null]
+          - name: product_type
+          - name: enrollment_date
+          - name: limit
+
+      - name: crm_interactions
+        description: Customer service touchpoints (Email/Chat/Call).
+        columns:
+          - name: interaction_id
+            tests: [not_null]
+          - name: customer_id
+            tests: [not_null]
+          - name: interaction_type
+          - name: interaction_date
+
+      - name: transaction_history
+        description: All product-level financial transactions.
+        columns:
+          - name: transaction_id
+            tests: [not_null]
+          - name: customer_id
+            tests: [not_null]
+          - name: product_id
+            tests: [not_null]
+          - name: transaction_amount
+          - name: closing_balance
+          - name: transaction_date

@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: bronze_customers
+    description: >
+      Bronze landing of customer master. Schema-enforced copy of the
+      source extract plus an `_ingested_at` audit column. No cleansing.
+    columns:
+      - name: customer_id
+        tests: [not_null]
+      - name: first_name
+      - name: last_name
+      - name: email
+      - name: mobile
+      - name: gender
+      - name: date_of_birth
+      - name: signup_date
+      - name: _ingested_at
+
+  - name: bronze_product_enrollments
+    description: Bronze landing of product enrollments.
+    columns:
+      - name: product_id
+        tests: [not_null]
+      - name: customer_id
+        tests: [not_null]
+      - name: product_type
+      - name: enrollment_date
+      - name: limit
+      - name: _ingested_at
+
+  - name: bronze_crm_interactions
+    description: Bronze landing of CRM interactions.
+    columns:
+      - name: interaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests: [not_null]
+      - name: interaction_type
+      - name: interaction_date
+      - name: _ingested_at
+
+  - name: bronze_transactions
+    description: Bronze landing of the transaction history.
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: product_id
+        tests: [not_null]
+      - name: customer_id
+        tests: [not_null]
+      - name: transaction_amount
+      - name: closing_balance
+      - name: transaction_ts
+      - name: _ingested_at

@@ -1,0 +1,13 @@
+target/
+dbt_packages/
+logs/
+.env
+.user.yml
+profiles.yml
+*.duckdb
+.DS_Store
+__pycache__/
+.venv/
+.idea/
+
+seeds/*

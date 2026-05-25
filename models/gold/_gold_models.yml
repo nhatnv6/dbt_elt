@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: int_customer_products
+    description: Per-customer product holdings rollup (ephemeral).
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+
+  - name: int_customer_transactions
+    description: Per-customer transaction rollup with 90-day rolling metrics (ephemeral).
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+
+  - name: int_customer_interactions
+    description: Per-customer CRM interaction rollup (ephemeral).
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+
+  - name: customer_360
+    description: Gold-layer unified customer profile. One row per customer.
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "total_inflow >= 0 and total_outflow >= 0"
+      - dbt_utils.expression_is_true:
+          expression: "total_transactions >= txns_last_90d"
+      - dbt_utils.expression_is_true:
+          expression: "total_products = savings_products + credit_card_products"
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: as_of_date
+        tests: [not_null]
+      - name: gender
+        tests:
+          - accepted_values: { values: ['Male', 'Female', 'Unknown'] }
+      - name: age_band
+        tests:
+          - accepted_values:
+              values: ['Under 18', '18-25', '26-35', '36-50', '51-65', '65+', 'Unknown']
+      - name: total_products
+        tests:
+          - dbt_utils.accepted_range: { min_value: 0 }
+      - name: total_credit_limit
+        tests:
+          - dbt_utils.accepted_range: { min_value: 0 }
+      - name: is_active_customer
+        tests: [not_null]
+      - name: lifecycle_stage
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Never Engaged', 'Active', 'At Risk', 'Dormant', 'Churned']
+      - name: customer_segment
+        description: Marketing segment; partitions the table.
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - VIP
+                - Premium
+                - Mainstream Credit
+                - Mainstream Saver
+                - At Risk
+                - Dormant
+                - Churned
+                - Prospect
+                - Other
