@@ -21,6 +21,9 @@ models:
 
   - name: customer_360
     description: Gold-layer unified customer profile. One row per customer.
+    config:
+      contract:
+        enforced: true
     tests:
       - dbt_utils.expression_is_true:
           expression: "total_inflow >= 0 and total_outflow >= 0"
@@ -30,31 +33,156 @@ models:
           expression: "total_products = savings_products + credit_card_products"
     columns:
       - name: customer_id
+        data_type: bigint
         tests: [not_null, unique]
       - name: report_date
+        data_type: date
         tests: [not_null]
+
+      - name: first_name
+        data_type: string
+      - name: last_name
+        data_type: string
+      - name: full_name
+        data_type: string
+      - name: email
+        data_type: string
+      - name: mobile
+        data_type: string
       - name: gender
+        data_type: string
         tests:
           - accepted_values: { values: ['Male', 'Female', 'Unknown'] }
+      - name: date_of_birth
+        data_type: date
+      - name: age_years
+        data_type: int
+
+      - name: signup_date
+        data_type: date
+      - name: tenure_days
+        data_type: int
+      - name: tenure_years
+        data_type: decimal(6,2)
+
+      - name: total_products
+        data_type: bigint
+        tests:
+          - dbt_utils.accepted_range: { min_value: 0 }
+      - name: savings_products
+        data_type: bigint
+      - name: credit_card_products
+        data_type: bigint
+      - name: total_credit_limit
+        data_type: double
+        tests:
+          - dbt_utils.accepted_range: { min_value: 0 }
+      - name: max_credit_limit
+        data_type: double
+      - name: product_types_held
+        data_type: array<string>
+      - name: has_savings
+        data_type: boolean
+      - name: has_credit_card
+        data_type: boolean
+      - name: is_multi_product
+        data_type: boolean
+      - name: first_enrollment_date
+        data_type: date
+      - name: last_enrollment_date
+        data_type: date
+
+      - name: total_transactions
+        data_type: bigint
+      - name: credit_transactions
+        data_type: bigint
+      - name: debit_transactions
+        data_type: bigint
+      - name: total_transaction_value
+        data_type: double
+      - name: total_inflow
+        data_type: double
+      - name: total_outflow
+        data_type: double
+      - name: avg_transaction_value
+        data_type: double
+      - name: max_transaction_value
+        data_type: double
+      - name: first_transaction_date
+        data_type: date
+      - name: last_transaction_date
+        data_type: date
+      - name: days_since_last_transaction
+        data_type: int
+      - name: txns_last_90d
+        data_type: bigint
+      - name: txn_value_last_90d
+        data_type: double
+
+      - name: current_balance
+        data_type: double
+      - name: avg_balance
+        data_type: double
+      - name: min_balance
+        data_type: double
+      - name: max_balance
+        data_type: double
+
+      - name: total_interactions
+        data_type: bigint
+      - name: email_interactions
+        data_type: bigint
+      - name: chat_interactions
+        data_type: bigint
+      - name: call_interactions
+        data_type: bigint
+      - name: first_interaction_date
+        data_type: date
+      - name: last_interaction_date
+        data_type: date
+      - name: days_since_last_interaction
+        data_type: int
+      - name: interactions_last_90d
+        data_type: bigint
+
+      - name: is_email_invalid
+        data_type: boolean
+      - name: missing_phone_number_flag
+        data_type: boolean
+
       - name: age_band
+        data_type: string
         tests:
           - accepted_values:
               values: ['Under 18', '18-25', '26-35', '36-50', '51-65', '65+', 'Unknown']
-      - name: total_products
-        tests:
-          - dbt_utils.accepted_range: { min_value: 0 }
-      - name: total_credit_limit
-        tests:
-          - dbt_utils.accepted_range: { min_value: 0 }
+      - name: days_since_last_activity
+        data_type: int
+      - name: last_activity_date
+        data_type: date
       - name: is_active_customer
+        data_type: boolean
         tests: [not_null]
       - name: lifecycle_stage
+        data_type: string
         tests:
           - not_null
           - accepted_values:
               values: ['Active', 'At Risk', 'Hibernate', 'Churned']
+      - name: credit_utilisation_ratio
+        data_type: decimal(10,4)
+
+      - name: recency_score
+        data_type: int
+      - name: frequency_score
+        data_type: int
+      - name: monetary_score
+        data_type: int
+      - name: rfm_total_score
+        data_type: int
+
       - name: customer_segment
         description: Marketing segment; partitions the table.
+        data_type: string
         tests:
           - not_null
           - accepted_values:
@@ -68,3 +196,6 @@ models:
                 - Churned
                 - Prospect
                 - Other
+
+      - name: _dbt_loaded_at
+        data_type: timestamp

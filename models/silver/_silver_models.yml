@@ -3,6 +3,21 @@ version: 2
 models:
   - name: silver_customers
     description: Cleansed customer master, current state per customer_id.
+    tests:
+      - dbt_utils.expression_is_true:
+          name: silver_customers_invalid_email_within_threshold
+          expression: "is_email_invalid = false"
+          config:
+            severity: warn
+            warn_if: ">0"
+            error_if: ">5000"
+      - dbt_utils.expression_is_true:
+          name: silver_customers_missing_phone_within_threshold
+          expression: "missing_phone_number_flag = false"
+          config:
+            severity: warn
+            warn_if: ">0"
+            error_if: ">5000"
     columns:
       - name: customer_id
         tests: [not_null, unique]

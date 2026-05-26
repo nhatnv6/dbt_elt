@@ -31,8 +31,8 @@ Order matters — first match wins.
 | Churned             | not active, lifecycle = Churned                                     |
 | Hibernate           | not active, lifecycle = Hibernate                                   |
 | At Risk             | not active, lifecycle = At Risk                                     |
-| Private Customer    | active, `total_transaction_value ≥ 100,000`                         |
-| Priority Customer   | active, `total_transaction_value ≥ 50,000`                          |
+| Private Customer    | active, `total_transaction_value ≥ private_customer_min_txn_value` (default 100k) |
+| Priority Customer   | active, `total_transaction_value ≥ priority_customer_min_txn_value` (default 50k) |
 | Mainstream Credit   | active, holds Credit Card                                           |
 | Mainstream Saver    | active, holds Savings                                               |
 | Prospect            | no products                                                         |

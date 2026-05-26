@@ -136,7 +136,7 @@ scored as (
     select
         *,
         ntile(5) over (
-            order by case when is_active_customer then days_since_last_activity end desc nulls last
+            order by case when is_active_customer then days_since_last_activity end desc nulls first
         )                                                                        as recency_score,
         ntile(5) over (order by total_transactions)                              as frequency_score,
         ntile(5) over (order by total_transaction_value)                         as monetary_score
@@ -152,8 +152,10 @@ select
         when not is_active_customer and lifecycle_stage = 'Churned'   then 'Churned'
         when not is_active_customer and lifecycle_stage = 'Hibernate' then 'Hibernate'
         when not is_active_customer and lifecycle_stage = 'At Risk'   then 'At Risk'
-        when total_transaction_value >= 100000 and is_active_customer then 'Private Customer'
-        when total_transaction_value >= 50000  and is_active_customer then 'Priority Customer'
+        when total_transaction_value >= {{ var('private_customer_min_txn_value') }}
+             and is_active_customer                                   then 'Private Customer'
+        when total_transaction_value >= {{ var('priority_customer_min_txn_value') }}
+             and is_active_customer                                   then 'Priority Customer'
         when has_credit_card and is_active_customer                   then 'Mainstream Credit'
         when has_savings     and is_active_customer                   then 'Mainstream Saver'
         when total_products = 0                                       then 'Prospect'
