@@ -6,9 +6,6 @@
     )
 }}
 
--- Append-only. Watermark from --vars 'backfill_transaction_date: ...'
--- if set, otherwise from the latest row already loaded.
-
 select
     cast(transaction_id     as bigint)     as transaction_id,
     cast(product_id         as bigint)     as product_id,

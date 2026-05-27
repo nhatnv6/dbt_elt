@@ -6,9 +6,6 @@
     )
 }}
 
--- Append-only. Watermark from --vars 'backfill_interaction_date: ...'
--- if set, otherwise from the latest row already loaded.
-
 select
     cast(interaction_id   as bigint)  as interaction_id,
     cast(customer_id      as bigint)  as customer_id,

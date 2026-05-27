@@ -6,10 +6,8 @@
     )
 }}
 
--- Append-only. Watermark from --vars 'backfill_enrollment_date: ...'
--- if set, otherwise from the latest row already loaded.
--- NOTE: enrollment_date doesn't change on credit-limit updates, so those
--- updates will be missed until the source ships an updated_at column.
+-- NOTE: enrollment_date doesn't change on credit-limit updates,
+-- so those updates are missed until the source ships an updated_at.
 
 select
     cast(product_id      as bigint)  as product_id,

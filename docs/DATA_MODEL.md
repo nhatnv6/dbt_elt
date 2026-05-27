@@ -1,7 +1,7 @@
 # Data Model
 
 ```
-seeds/*.csv   ──►  raw.*   ──►  bronze.*   ──►  silver.*   ──►  gold.customer_360
+seeds/*.csv ──►  bronze.*   ──►  silver.*   ──►  gold.customer_360
                               (append)        (merge)         (table)
 ```
 
@@ -19,8 +19,7 @@ seeds/*.csv   ──►  raw.*   ──►  bronze.*   ──►  silver.*   ─
   always be rebuilt from it.
 * **Silver merge** — runtime stays proportional to *new* bronze data, not
   total volume, while still giving downstream a clean "current state".
-* **Gold full rebuild** — at <1M customers it's seconds. Switch to
-  incremental once volume hits ~10M.
+* **Gold full rebuild** — Can be incremental loading for better performance
 
 ## Conventions
 

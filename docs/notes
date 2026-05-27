@@ -1,3 +1,0 @@
-data should have updated_at to handle backfill. with this we can create checkpoint to get exactly changed data
-
-- can be apply checkpoint

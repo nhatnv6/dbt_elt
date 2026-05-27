@@ -5,7 +5,7 @@ config-version: 2
 profile: 'bank_customer_360'
 
 model-paths: ["models"]
-seed-paths: ["seeds"]                # dbt default location for seed CSVs
+seed-paths: ["seeds"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
 analysis-paths: ["analyses"]
@@ -22,31 +22,24 @@ vars:
   hibernate_window_days: 180
   churn_window_days: 365
 
-  # Value-tier thresholds (transaction value). Order: Private > Priority.
+  # Value-tier thresholds. Private > Priority.
   private_customer_min_txn_value:  100000
   priority_customer_min_txn_value: 50000
 
-  # Reporting anchor date for all recency metrics in gold.
-  # Override via:  dbt build --vars '{report_date: "2025-07-01"}'
-  # If null/unset, the report_date() macro falls back to current_date().
+  # Reporting anchor date. Null -> current_date().
   report_date: "2025-07-01"
 
-  # Optional watermark overrides for bronze incremental loads.
-  # Each var corresponds to one bronze table's watermark column.
-  # When set, the model reads source rows with <watermark_col> >= <var>.
-  # When unset, it falls back to MAX(<watermark_col>) FROM the bronze table.
-  # Pass via CLI:           dbt run --vars '{backfill_transaction_date: "2025-04-01"}'
-  # Pass from Workflow:     set under the dbt task "dbt vars" block.
-  backfill_transaction_date: null   # bronze_transactions     -> transaction_date
-  backfill_interaction_date: null   # bronze_crm_interactions -> interaction_date
-  backfill_enrollment_date:  null   # bronze_product_enrollments -> enrollment_date
+  # Per-table backfill watermarks. Null -> use MAX from the table.
+  backfill_transaction_date: null
+  backfill_interaction_date: null
+  backfill_enrollment_date:  null
 
 seeds:
   bank_customer_360:
-    +schema: raw                     # raw landing zone for the source extracts
+    +schema: raw
     +quote_columns: false
     +file_format: delta
-    +delimiter: "|"                  # source CSVs are pipe-separated
+    +delimiter: "|"
     customer_raw:
       +column_types:
         customer_id: bigint
@@ -79,16 +72,12 @@ seeds:
         transaction_date: timestamp
         transaction_id: bigint
 
-# Medallion architecture
-#   bronze : sources  -> raw  (durable typed landings of the source data)
-#   silver : raw      -> cleansed, deduped, conformed; DQ-flagged
-#   gold   : silver   -> business-ready aggregates / customer_360
 models:
   bank_customer_360:
     bronze:
       +materialized: incremental
       +file_format: delta
-      +incremental_strategy: append      # append-only; bronze preserves full history
+      +incremental_strategy: append      
       +on_schema_change: append_new_columns
       +schema: bronze
     silver:

@@ -6,9 +6,7 @@
     )
 }}
 
--- Append a fresh snapshot once per day. Source has no updated_at, so
--- snapshot_date is our version key. Silver picks the latest snapshot
--- per customer_id.
+-- Daily snapshot append: source has no updated_at, so snapshot_date is the version key.
 
 select
     cast(customer_id   as bigint)  as customer_id,
